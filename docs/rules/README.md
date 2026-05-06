@@ -23,3 +23,4 @@
 |------|-----------|
 | [common/language.md](common/language.md) | 모든 답변·문서는 한국어로 작성 |
 | [common/commit.md](common/commit.md) | 변경사항 목적별 커밋 분리, 메시지 자세히 작성 |
+| [common/restricted-directories.md](common/restricted-directories.md) | 사용자가 지정한 디렉토리와 파일은 열람·검색·분석 금지 |
