@@ -1,0 +1,10 @@
+/ssh_keys/*
+/config/*
+
+# SSH 개인키 등 인증 정보
+ssh_keys/
+*.key
+*.pem
+
+# Ansible 로컬 캐시
+.ansible/
