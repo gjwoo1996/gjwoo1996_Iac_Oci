@@ -1,0 +1,20 @@
+{
+	"name": "ansible-dev-container-codespaces",
+	"image": "ghcr.io/ansible/community-ansible-dev-tools:latest",
+	"containerUser": "root",
+	"runArgs": [
+	  "--privileged",
+	  "--device",
+	  "/dev/fuse",
+	  "--hostname=ansible-dev-container"
+	],
+	"updateRemoteUserUID": true,
+	"customizations": {
+	  "vscode": {
+		"extensions": ["redhat.ansible"]
+	  }
+	},
+	"initializeCommand": "bash ${localWorkspaceFolder}/.devcontainer/command/initializeCommand.sh ${localWorkspaceFolder} ${containerWorkspaceFolder} ${localWorkspaceFolderBasename} ${containerWorkspaceFolderBasename} ${devcontainerId}",
+	"postCreateCommand": "bash ${containerWorkspaceFolder}/.devcontainer/command/postCreateCommand.sh"
+	
+  }
