@@ -1,0 +1,114 @@
+- name: Setup OCI Instance with Docker (ARM Optimized)
+  hosts: oci_instances
+  become: true
+  tasks:
+    - name: Update package list
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install required packages for Docker
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository (ARM Compatible)
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=arm64] https://download.docker.com/linux/ubuntu focal stable"
+        state: present
+
+    - name: Update package list after adding Docker repo
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install Docker (ARM Compatible)
+      ansible.builtin.apt:
+        name: docker-ce
+        state: present
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add current user to the Docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Force SSH reconnection to apply Docker group changes
+      meta: reset_connection  # 🔹 SSH 세션을 다시 로드하여 그룹 변경 반영
+
+    - name: Change Docker socket permission (Avoid Permission Denied)
+      ansible.builtin.file:
+        path: /var/run/docker.sock
+        mode: '0666'
+
+    - name: Get system architecture
+      command: uname -m
+      register: system_arch
+
+    - name: Install latest Docker Compose (ARM Optimized)
+      ansible.builtin.get_url:
+        url: >-
+          {{ 'https://github.com/docker/compose/releases/latest/download/docker-compose-linux-aarch64'
+          if system_arch.stdout == 'aarch64' else
+          'https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64' }}
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Ensure Docker Compose directory exists
+      ansible.builtin.file:
+        path: /home/ubuntu/workSpace/side-project
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Docker Compose file
+      ansible.builtin.copy:
+        src: "../docker-compose.yml"  # 🔹 플레이북과 파일 위치 확인 후 수정 필요!
+        dest: "/home/ubuntu/workSpace/side-project/docker-compose.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy .env file
+      ansible.builtin.copy:
+        src: "../.devcontainer/.env"  # 🔹 플레이북과 파일 위치 확인 후 수정 필요!
+        dest: "/home/ubuntu/workSpace/side-project/.env"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy dockerFolder
+      ansible.builtin.copy:
+        src: "../docker/."  # 🔹 플레이북과 파일 위치 확인 후 수정 필요!
+        dest: "/home/ubuntu/workSpace/side-project/docker"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    # - name: Clone Express.js project from Git
+    #   ansible.builtin.git:
+    #     repo: "https://{{ lookup('env', 'GITHUB_PAT') }}@github.com/gjwoo960101/crud_express_sample.git"  # ✅ Express 프로젝트 저장소
+    #     dest: "/home/ubuntu/docker-compose/crud_express_sample"
+    #     version: "main"
+    #     force: yes
+
+    - name: Start Docker Compose services as root (to avoid permission issues)
+      ansible.builtin.command:
+        cmd: docker compose up --build -d mariadb
+        chdir: /home/ubuntu/workSpace/side-project
+      become: true  # 🔹 root 권한으로 실행하여 접근 문제 방지
+

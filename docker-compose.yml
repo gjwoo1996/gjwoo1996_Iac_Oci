@@ -1,0 +1,46 @@
+services:
+  mariadb:
+    build:
+      context: ./docker/mariadb
+      dockerfile: Dockerfile
+    container_name: mariadb
+    environment:
+      TZ: Asia/Seoul
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - my_network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "localhost", "-u${MYSQL_USER}", "-p${MYSQL_PASSWORD}", "-e", "SELECT 2"]
+      interval: 10s
+      retries: 5
+      start_period: 20s
+  
+  express_app:
+    #build: ../crud_express_sample  # Express 프로젝트 빌드 (express-app 폴더에서 Dockerfile 사용)
+    image: gjwoo96/sideproject-express-app:latest
+    container_name: express_app
+    restart: always
+    ports:
+      - "3001:3001"
+    depends_on:
+      #mariadb: docker compose V2에서는 더이상 condition을 사용하지 않음
+        #condition: service_healthy
+      - mariadb
+    networks:
+      - my_network
+
+volumes:
+  mariadb_data:
+    name: mariadb_data
+
+networks:
+  my_network:
+    driver: bridge
